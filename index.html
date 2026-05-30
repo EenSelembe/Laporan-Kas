@@ -52,8 +52,13 @@ th {
   background: #333;
 }
 
-tr:nth-child(even) {
-  background: #1a1a1a;
+/* klik baris untuk edit */
+tr.data-row {
+  cursor: pointer;
+}
+
+tr.data-row:hover {
+  background: #222;
 }
 
 .saldo {
@@ -63,16 +68,10 @@ tr:nth-child(even) {
   color: #00ffcc;
 }
 
-.btn {
-  padding: 5px;
-  font-size: 12px;
-  margin: 2px;
-  border-radius: 3px;
+.hapus {
   cursor: pointer;
+  font-size: 18px;
 }
-
-.edit { background: orange; color: #000; }
-.hapus { background: red; color: #fff; }
 </style>
 </head>
 
@@ -81,12 +80,10 @@ tr:nth-child(even) {
 <h2>LAPORAN KEUANGAN</h2>
 
 <input type="text" id="keterangan" placeholder="Keterangan">
-
-<!-- INPUT UANG (keyboard HP angka) -->
 <input type="text" id="pemasukan" placeholder="Pemasukan (Rp)" inputmode="numeric" pattern="[0-9.]*">
 <input type="text" id="pengeluaran" placeholder="Pengeluaran (Rp)" inputmode="numeric" pattern="[0-9.]*">
 
-<button onclick="tambahData()">Tambah</button>
+<button onclick="tambahData()">Tambah / Update</button>
 
 <div class="saldo" id="saldo">Saldo: Rp 0</div>
 
@@ -98,7 +95,7 @@ tr:nth-child(even) {
   <th>Pemasukan</th>
   <th>Pengeluaran</th>
   <th>Saldo</th>
-  <th>Aksi</th>
+  <th>Hapus</th>
 </tr>
 </thead>
 <tbody id="tabel"></tbody>
@@ -108,6 +105,7 @@ tr:nth-child(even) {
 let data = JSON.parse(localStorage.getItem("keuangan")) || [];
 let editIndex = -1;
 
+// simpan
 function simpan() {
   localStorage.setItem("keuangan", JSON.stringify(data));
 }
@@ -118,17 +116,17 @@ function getTanggal() {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 
-// format ribuan
+// format rupiah
 function formatRupiah(angka) {
   return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-// ambil angka asli
+// hapus titik
 function parseRupiah(val) {
   return parseInt(val.replace(/\./g, "")) || 0;
 }
 
-// auto format titik saat ketik
+// format input otomatis titik
 function setupFormat(id) {
   let input = document.getElementById(id);
 
@@ -143,34 +141,41 @@ function setupFormat(id) {
 setupFormat("pemasukan");
 setupFormat("pengeluaran");
 
+// render
 function render() {
   let tabel = document.getElementById("tabel");
   tabel.innerHTML = "";
 
   let saldo = 0;
 
-  data.forEach((item, index) => {
+  // data terbaru di atas
+  let reverseData = [...data].reverse();
+
+  reverseData.forEach((item) => {
+
+    let realIndex = data.indexOf(item);
+
     saldo += item.pemasukan - item.pengeluaran;
 
     tabel.innerHTML += `
-      <tr>
+      <tr class="data-row" onclick="editData(${realIndex})">
         <td>${item.tanggal}</td>
         <td>${item.keterangan}</td>
         <td>${formatRupiah(item.pemasukan)}</td>
         <td>${formatRupiah(item.pengeluaran)}</td>
         <td>${formatRupiah(saldo)}</td>
-        <td>
-          <button class="btn edit" onclick="editData(${index})">Edit</button>
-          <button class="btn hapus" onclick="hapusData(${index})">Hapus</button>
-        </td>
+        <td onclick="event.stopPropagation(); hapusData(${realIndex})" class="hapus">🗑️</td>
       </tr>
     `;
   });
 
+  let total = data.reduce((a,b)=>a + (b.pemasukan - b.pengeluaran),0);
+
   document.getElementById("saldo").innerText =
-    "Saldo: Rp " + formatRupiah(saldo);
+    "Saldo: Rp " + formatRupiah(total);
 }
 
+// tambah / update
 function tambahData() {
   let keterangan = document.getElementById("keterangan").value;
   let pemasukan = parseRupiah(document.getElementById("pemasukan").value);
@@ -181,10 +186,8 @@ function tambahData() {
     return;
   }
 
-  let tanggal = getTanggal();
-
   let obj = {
-    tanggal,
+    tanggal: getTanggal(),
     keterangan,
     pemasukan,
     pengeluaran
@@ -202,6 +205,7 @@ function tambahData() {
   resetForm();
 }
 
+// klik baris = edit
 function editData(index) {
   let item = data[index];
 
@@ -212,6 +216,7 @@ function editData(index) {
   editIndex = index;
 }
 
+// hapus
 function hapusData(index) {
   if (confirm("Hapus data ini?")) {
     data.splice(index, 1);
@@ -220,6 +225,7 @@ function hapusData(index) {
   }
 }
 
+// reset form
 function resetForm() {
   document.getElementById("keterangan").value = "";
   document.getElementById("pemasukan").value = "";
