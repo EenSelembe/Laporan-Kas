@@ -67,10 +67,12 @@ tr:nth-child(even) {
   padding: 5px;
   font-size: 12px;
   margin: 2px;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
-.edit { background: orange; }
-.hapus { background: red; }
+.edit { background: orange; color: #000; }
+.hapus { background: red; color: #fff; }
 </style>
 </head>
 
@@ -80,8 +82,9 @@ tr:nth-child(even) {
 
 <input type="text" id="keterangan" placeholder="Keterangan">
 
-<input type="text" id="pemasukan" placeholder="Pemasukan (Rp)">
-<input type="text" id="pengeluaran" placeholder="Pengeluaran (Rp)">
+<!-- INPUT UANG (keyboard HP angka) -->
+<input type="text" id="pemasukan" placeholder="Pemasukan (Rp)" inputmode="numeric" pattern="[0-9.]*">
+<input type="text" id="pengeluaran" placeholder="Pengeluaran (Rp)" inputmode="numeric" pattern="[0-9.]*">
 
 <button onclick="tambahData()">Tambah</button>
 
@@ -109,23 +112,23 @@ function simpan() {
   localStorage.setItem("keuangan", JSON.stringify(data));
 }
 
-// format tanggal otomatis
+// tanggal otomatis
 function getTanggal() {
   let d = new Date();
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 
-// format angka pakai titik
+// format ribuan
 function formatRupiah(angka) {
   return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-// ambil angka bersih
+// ambil angka asli
 function parseRupiah(val) {
   return parseInt(val.replace(/\./g, "")) || 0;
 }
 
-// input format otomatis titik
+// auto format titik saat ketik
 function setupFormat(id) {
   let input = document.getElementById(id);
 
@@ -180,7 +183,12 @@ function tambahData() {
 
   let tanggal = getTanggal();
 
-  let obj = { tanggal, keterangan, pemasukan, pengeluaran };
+  let obj = {
+    tanggal,
+    keterangan,
+    pemasukan,
+    pengeluaran
+  };
 
   if (editIndex === -1) {
     data.push(obj);
